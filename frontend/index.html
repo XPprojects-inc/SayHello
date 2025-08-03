@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <title>vidGPT</title>
+    <style>
+        body { font-family: sans-serif; }
+        #video-placeholder { width: 640px; height: 360px; background: #000; margin-bottom: 10px; }
+        button { padding: 10px 20px; }
+    </style>
+</head>
+<body>
+    <h1>vidGPT</h1>
+    <div id="video-placeholder"></div>
+    <button id="generate">Генерировать похожее</button>
+    <script>
+        document.getElementById('generate').addEventListener('click', async () => {
+            const resp = await fetch('/generate', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({})});
+            const data = await resp.json();
+            alert('Видео создано: ' + data.video_path);
+        });
+    </script>
+</body>
+</html>
