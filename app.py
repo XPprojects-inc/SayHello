@@ -1,35 +1,43 @@
-import telebot
+import os
 from flask import Flask, request
+import telebot
 
-TOKEN = "8422200347:AAHaZVamZj8N2qCvKQfaR2y7HJVr08Qkgj0"
+# Лучше через переменные окружения в Railway/Render -> Variables
+TOKEN   = os.getenv("BOT_TOKEN", "8422200347:AAHaZVamZj8N2qCvKQfaR2y7HJVr08Qkgj0")
+CHAT_ID = os.getenv("CHAT_ID",  "5900038402")
+
 bot = telebot.TeleBot(TOKEN)
 app = Flask(__name__)
 
-# ID твоего чата, куда будут приходить уведомления
-YOUR_CHAT_ID = 5900038402
+# Health-check
+@app.get("/")
+def root():
+    return "OK", 200
 
-devices = {
-    "gp1": "Грядка 1",
-    "gp2": "Парник",
-}
-
-@app.route('/update', methods=['POST'])
+# Приём данных от ESP
+@app.post("/update")
 def update():
-    device_id = request.form.get('device_id')
-    temperature = request.form.get('temperature')
-    bot_token = request.form.get('bot_token')
+    device_id   = request.form.get("device_id")
+    temperature = request.form.get("temperature")
+    bot_token   = request.form.get("bot_token")
+
+    if not (device_id and temperature and bot_token):
+        return "Missing params", 400
 
     if bot_token != TOKEN:
         return "Invalid bot token", 403
 
-    device_name = devices.get(device_id, "Неизвестное устройство")
-    message = f"🌡 {device_name} ({device_id})\nТемпература: {temperature}°C"
+    try:
+        t = float(temperature)
+    except:
+        return "Bad temperature", 400
 
-    if float(temperature) > 30.0:
-        message += "\n⚠️ ВЫСОКАЯ ТЕМПЕРАТУРА!"
+    msg = f"🌡 {device_id}: {t:.1f}°C"
+    if t > 30.0:
+        msg += "\n⚠️ ВЫСОКАЯ ТЕМПЕРАТУРА"
+    elif t < 10.0:
+        msg += "\n⚠️ НИЗКАЯ ТЕМПЕРАТУРА"
 
-    bot.send_message(YOUR_CHAT_ID, message)
+    bot.send_message(CHAT_ID, msg)
     return "OK", 200
 
-if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=443, ssl_context=('cert.pem', 'key.pem'))
